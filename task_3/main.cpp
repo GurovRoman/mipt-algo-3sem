@@ -7,59 +7,57 @@ using std::vector;
 class AhoCorasickTrie {
 private:
     struct Node {
-        vector<int> children;
+        vector<int> children = vector<int>(1 << (sizeof(char) * 8 - 1), 0);
         int parent = -1;
         char char_from_parent = 0;
         bool terminal = false;
-        vector<int> terminal_pattern_positions;
+        vector<int> terminal_pattern_ids;
         int failure_link = -1;
         int output_link = -1;
     };
 
     vector<Node> trie;
-    int pattern_count = 0;
-    int pattern_size = 0;
-    vector<int> occurrences;
-    static const size_t ALPHABET_SIZE = 26;
+
+    int current_traversal_node = 0;
 
 public:
-    void constructFromPattern(const std::string &pattern);
+    AhoCorasickTrie();
+
+    void addPatternToTrie(const std::string &pattern, int pattern_id);
+
     int getNextNode(int node_id, char c);
+
     int getFailureLink(int node_id);
+
     int getOutputLink(int node_id);
-    void traverse(const std::string& string);
-    void printOccurrences();
+
+    std::vector<int> traverseLetter(char letter);
+
+    void resetTraversal();
+
 };
 
 
-void AhoCorasickTrie::constructFromPattern(const std::string &pattern) {
-    trie.reserve(pattern.size());
+AhoCorasickTrie::AhoCorasickTrie() {
     trie.emplace_back();
+}
 
+void AhoCorasickTrie::addPatternToTrie(const std::string &pattern, int pattern_id) {
     int current = 0;
     for (int i = 0; i < pattern.size(); ++i) {
-        char c = pattern[i];
-        bool is_last_letter = (i + 1 == pattern.size()) || pattern[i + 1] == '?';
-        if (c != '?') {
-            if (!trie[current].children[c]) {
-                trie.emplace_back();
-                trie.back().children = vector<int>(ALPHABET_SIZE, 0);
-                trie.back().parent = current;
-                trie.back().char_from_parent = c;
-                trie[current].children[c] = trie.size() - 1;
-            }
-            current = trie[current].children[c];
-            if (is_last_letter) {
-                trie[current].terminal = true;
-                trie[current].terminal_pattern_positions.push_back(i);
-                ++pattern_count;
-            }
-        } else {
-            current = 0;
+        char c = pattern[i] - 'a';
+        if (!trie[current].children[c]) {
+            trie.emplace_back();
+            trie.back().parent = current;
+            trie.back().char_from_parent = c;
+            trie[current].children[c] = trie.size() - 1;
+        }
+        current = trie[current].children[c];
+        if (i == pattern.size() - 1) {
+            trie[current].terminal = true;
+            trie[current].terminal_pattern_ids.push_back(pattern_id);
         }
     }
-
-    pattern_size = pattern.size();
 }
 
 
@@ -74,7 +72,7 @@ int AhoCorasickTrie::getNextNode(int node_id, char c) {
 }
 
 int AhoCorasickTrie::getFailureLink(int node_id) {
-    Node& node = trie[node_id];
+    Node &node = trie[node_id];
     if (node.failure_link == -1) {
         if (node.parent <= 0) {
             node.failure_link = 0;
@@ -87,7 +85,7 @@ int AhoCorasickTrie::getFailureLink(int node_id) {
 }
 
 int AhoCorasickTrie::getOutputLink(int node_id) {
-    Node& node = trie[node_id];
+    Node &node = trie[node_id];
     if (node.output_link == -1) {
         int failure_link = getFailureLink(node_id);
         if (trie[failure_link].parent == -1) {
@@ -101,33 +99,67 @@ int AhoCorasickTrie::getOutputLink(int node_id) {
     return node.output_link;
 }
 
-void AhoCorasickTrie::traverse(const std::string &string) {
-    occurrences.clear();
-    occurrences.resize(string.size(), 0);
+std::vector<int> AhoCorasickTrie::traverseLetter(char letter) {
+    current_traversal_node = getNextNode(current_traversal_node, letter - 'a');
 
-    int current_node = 0;
-    for (int i = 0; i < string.size(); ++i) {
-        current_node = getNextNode(current_node, string[i]);
-
-        int current_output_node = current_node;
-        if (!trie[current_output_node].terminal) {
-            current_output_node = getOutputLink(current_output_node);
-        }
-
-        while (current_output_node) {
-            for (auto pos : trie[current_output_node].terminal_pattern_positions) {
-                if (i >= pos) {
-                    occurrences[i - pos] += 1;
-                }
-            }
-            current_output_node = getOutputLink(current_output_node);
-        }
+    int current_output_node = current_traversal_node;
+    if (!trie[current_output_node].terminal) {
+        current_output_node = getOutputLink(current_output_node);
     }
+
+    std::vector<int> output;
+    while (current_output_node) {
+        for (auto id : trie[current_output_node].terminal_pattern_ids) {
+            output.push_back(id);
+        }
+        current_output_node = getOutputLink(current_output_node);
+    }
+
+    return output;
 }
 
-void AhoCorasickTrie::printOccurrences() {
+void AhoCorasickTrie::resetTraversal() {
+    current_traversal_node = 0;
+}
+
+
+void printWildcardPatternOccurrences(const std::string &pattern, const std::string &string) {
+    AhoCorasickTrie trie;
+
+    int pattern_count = 0;
+    vector<int> pattern_end_positions;
+
+    std::string pattern_part;
+    for (int i = 0; i < pattern.size(); ++i) {
+        char c = pattern[i];
+        if (c == '?') {
+            pattern_part.clear();
+            continue;
+        }
+        pattern_part += c;
+        bool is_last_letter = (i + 1 == pattern.size()) || pattern[i + 1] == '?';
+        if (is_last_letter) {
+            pattern_end_positions.push_back(i);
+            trie.addPatternToTrie(pattern_part, pattern_end_positions.size() - 1);
+            ++pattern_count;
+        }
+    }
+
+    vector<int> occurrences;
+    occurrences.resize(string.size(), 0);
+
+    for (int i = 0; i < string.size(); ++i) {
+        auto occurrence_ids = trie.traverseLetter(string[i]);
+        for (auto id : occurrence_ids) {
+            auto pos = pattern_end_positions[id];
+            if (i >= pos) {
+                occurrences[i - pos] += 1;
+            }
+        }
+    }
+
     for (int i = 0; i < occurrences.size(); ++i) {
-        if (occurrences[i] == pattern_count && i + pattern_size <= occurrences.size()) {
+        if (occurrences[i] == pattern_count && i + pattern.size() <= occurrences.size()) {
             std::cout << i << ' ';
         }
     }
@@ -139,8 +171,5 @@ int main() {
 
     std::cin >> pattern >> string;
 
-    AhoCorasickTrie trie;
-    trie.constructFromPattern(pattern);
-    trie.traverse(string);
-    trie.printOccurrences();
+    printWildcardPatternOccurrences(pattern, string);
 }
