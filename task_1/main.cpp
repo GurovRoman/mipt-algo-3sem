@@ -43,8 +43,6 @@ int main() {
 
     std::cin >> pattern >> string;
 
-    pattern;
-
     auto occurrences = findOccurrences(string, pattern);
 
     for (auto i : occurrences) {
