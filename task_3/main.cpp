@@ -1,15 +1,13 @@
 #include <iostream>
 #include <vector>
 #include <string>
-#include <map>
 
 using std::vector;
-using std::map;
 
 class AhoCorasickTrie {
 private:
     struct Node {
-        map<char, int> children;
+        vector<int> children;
         int parent = -1;
         char char_from_parent = 0;
         bool terminal = false;
@@ -22,6 +20,7 @@ private:
     int pattern_count = 0;
     int pattern_size = 0;
     vector<int> occurrences;
+    static const size_t ALPHABET_SIZE = 26;
 
 public:
     void constructFromPattern(const std::string &pattern);
@@ -42,8 +41,9 @@ void AhoCorasickTrie::constructFromPattern(const std::string &pattern) {
         char c = pattern[i];
         bool is_last_letter = (i + 1 == pattern.size()) || pattern[i + 1] == '?';
         if (c != '?') {
-            if (!trie[current].children.count(c)) {
+            if (!trie[current].children[c]) {
                 trie.emplace_back();
+                trie.back().children = vector<int>(ALPHABET_SIZE, 0);
                 trie.back().parent = current;
                 trie.back().char_from_parent = c;
                 trie[current].children[c] = trie.size() - 1;
@@ -64,7 +64,7 @@ void AhoCorasickTrie::constructFromPattern(const std::string &pattern) {
 
 
 int AhoCorasickTrie::getNextNode(int node_id, char c) {
-    if (trie[node_id].children.count(c)) {
+    if (trie[node_id].children[c]) {
         return trie[node_id].children[c];
     } else if (node_id == 0) {
         return 0;
