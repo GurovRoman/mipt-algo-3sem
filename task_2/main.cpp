@@ -22,7 +22,9 @@ std::vector<int> prefixToZ(const std::vector<int>& prefix_function) {
     std::vector<int> z_function(prefix_function.size(), 0);
     z_function[0] = z_function.size();
     for (int i = 1; i < prefix_function.size(); ++i) {
-        z_function[i - prefix_function[i] + 1] = prefix_function[i];
+        if (prefix_function[i]) {
+            z_function[i - prefix_function[i] + 1] = prefix_function[i];
+        }
     }
     for (int i = 1; i < z_function.size();) {
         if (z_function[i] == 0) {
@@ -43,6 +45,34 @@ std::vector<int> prefixToZ(const std::vector<int>& prefix_function) {
 }
 
 std::string zToString(const std::vector<int>& z_function) {
+    std::string result;
+    int j = 0;
+    int prefix_length = 0;
+    char alphabet_size = 26;
+    char available_char = 0;
+    for (int i = 0; i < z_function.size(); ++i) {
+        int z_value = i ? z_function[i] : 0;
+        if (!z_value && !prefix_length) {
+            result.push_back('a' + available_char);
+
+            if (available_char < alphabet_size - 1) {
+                ++available_char;
+            }
+        }
+        if (z_value > prefix_length) {
+            prefix_length = z_value;
+            j = 0;
+        }
+        if (prefix_length) {
+            result += result[j];
+            ++j;
+            --prefix_length;
+        }
+    }
+    return result;
+}
+
+std::string zToLexMinString(const std::vector<int>& z_function) {
     std::string result;
     int j = 0;
     int prefix_length = 0;
@@ -96,6 +126,10 @@ std::vector<int> zToPrefix(const std::vector<int>& z) {
 
 std::string prefixToString(const std::vector<int>& prefix) {
     return zToString(prefixToZ(prefix));
+}
+
+std::string prefixToLexMinString(const std::vector<int>& prefix) {
+    return zToLexMinString(prefixToZ(prefix));
 }
 
 int main() {
