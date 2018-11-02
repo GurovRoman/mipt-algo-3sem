@@ -126,9 +126,7 @@ public:
     }
 };
 
-int main() {
-    std::string string;
-    std::cin >> string;
+size_t countDifferentSubstrings(const std::string& string) {
     SuffixArrayWithLCP suf;
     suf.constructFromString(string);
     size_t ans = 0;
@@ -136,6 +134,12 @@ int main() {
         ans += string.size() - suf[i];
         ans -= suf.lcp(i);
     }
-    std::cout << ans;
+    return ans;
+}
+
+int main() {
+    std::string string;
+    std::cin >> string;
+    std::cout << countDifferentSubstrings(string);
     return 0;
 }

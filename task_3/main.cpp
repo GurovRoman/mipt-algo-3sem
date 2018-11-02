@@ -126,10 +126,7 @@ public:
     }
 };
 
-int main() {
-    std::string first, second;
-    unsigned long long k;
-    std::cin >> first >> second >> k;
+std::string getKthCommonSubstring(const std:: string& first, const std:: string& second, unsigned long long k) {
     std::string string = first + "#" + second;
     SuffixArrayWithLCP suf;
     suf.constructFromString(string);
@@ -148,10 +145,17 @@ int main() {
         }
     }
     if (current < k) {
-        std::cout << -1 << '\n';
+        return "-1";
     }
     else {
-        std::cout << string.substr(suf[i - 1], k - (current - prev_lcp)) << '\n';
+         return string.substr(suf[i - 1], k - (current - prev_lcp));
     }
+}
+
+int main() {
+    std::string first, second;
+    unsigned long long k;
+    std::cin >> first >> second >> k;
+    std::cout << getKthCommonSubstring(first, second, k);
     return 0;
 }
