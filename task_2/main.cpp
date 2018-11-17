@@ -6,10 +6,10 @@ using std::vector;
 
 class SuffixArrayWithLCP {
 private:
-    const size_t ALPHABET_SIZE = 255;  //maximum ascii value of a character in used strings
+    static const size_t ALPHABET_SIZE = 255;  //maximum ascii value of a character in used strings
     std::string string;
-    vector<size_t> suffixArray;
-    vector<size_t> lcpArray;
+    vector<size_t> suffix_array;
+    vector<size_t> lcp_array;
 
     struct RankedSuffix {
         size_t index;
@@ -28,6 +28,8 @@ public:
     size_t lcp(size_t pos) const;
 };
 
+
+const size_t SuffixArrayWithLCP::ALPHABET_SIZE;
 
 void SuffixArrayWithLCP::constructSuffix() {
     const size_t size = string.size();
@@ -73,7 +75,7 @@ void SuffixArrayWithLCP::constructSuffix() {
 
         for (int rank_type = 0; rank_type < 2; ++rank_type) {
             vector<RankedSuffix> buffer(size);
-            vector<size_t> counter(std::max<size_t>(size + 1, ALPHABET_SIZE));
+            vector<size_t> counter(std::max<size_t>(size + 1, SuffixArrayWithLCP::ALPHABET_SIZE));
             for (int i = 0; i < size; ++i) {
                 int value = rank_type ? suffixes[i].rank : suffixes[i].rank_next;
                 ++counter[value + 1];
@@ -91,19 +93,19 @@ void SuffixArrayWithLCP::constructSuffix() {
             }
         }
 
-        suffixArray.resize(size);
+        suffix_array.resize(size);
         for (int i = 0; i < size; ++i) {
-            suffixArray[i] = suffixes[i].index;
+            suffix_array[i] = suffixes[i].index;
         }
     }
 }
 
 void SuffixArrayWithLCP::constructLCP() {
-    const size_t size = suffixArray.size();
-    lcpArray.resize(size);
+    const size_t size = suffix_array.size();
+    lcp_array.resize(size);
     vector<size_t> index_to_suffix(size);
     for (size_t i = 0; i < size; ++i) {
-        index_to_suffix[suffixArray[i]] = i;
+        index_to_suffix[suffix_array[i]] = i;
     }
     size_t prev_lcp = 0;
     for (int current = 0; current < size; ++current) {
@@ -114,14 +116,14 @@ void SuffixArrayWithLCP::constructLCP() {
             if (prev_lcp > 0) {
                 --prev_lcp;
             }
-            size_t next = suffixArray[index_to_suffix[current] + 1];
+            size_t next = suffix_array[index_to_suffix[current] + 1];
             while (current + prev_lcp < size
                    && next + prev_lcp < size
                    && string[current + prev_lcp] == string[next + prev_lcp]) {
                 ++prev_lcp;
             }
         }
-        lcpArray[index_to_suffix[current]] = prev_lcp;
+        lcp_array[index_to_suffix[current]] = prev_lcp;
     }
 }
 
@@ -130,16 +132,16 @@ SuffixArrayWithLCP::SuffixArrayWithLCP(std::string input) : string(std::move(inp
     constructLCP();
 }
 
-size_t SuffixArrayWithLCP::operator[](size_t pos) const {
-    return suffixArray[pos];
+inline size_t SuffixArrayWithLCP::operator[](size_t pos) const {
+    return suffix_array[pos];
 }
 
-size_t SuffixArrayWithLCP::lcp(size_t pos) const {
-    return lcpArray[pos];
+inline size_t SuffixArrayWithLCP::lcp(size_t pos) const {
+    return lcp_array[pos];
 }
 
 
-class TwoSuffixTrie {
+class TwoSuffixTree {
 private:
     struct Node {
         size_t parent;
@@ -169,7 +171,11 @@ private:
     }
 
 public:
-    TwoSuffixTrie(const std::string& first, const std::string& second) {
+    TwoSuffixTree(const std::string& first, const std::string& second) {
+        constructFromTwoStrings(first, second);
+    }
+
+    void constructFromTwoStrings(const std::string& first, const std::string& second) {
         std::string string = first + second;
         suf = SuffixArrayWithLCP(string);
         trie.emplace_back(0, 0, 0, 0);
@@ -183,34 +189,26 @@ public:
                 last_node = current_node;
                 current_node = trie[current_node].parent;
             }
-            if (depth == lcp) {
-                size_t val = suf[i] + lcp;
-                bool type = suf[i] >= first.size();
-                size_t left = val - first.size() * type;
-                size_t right = type ? second.size() : first.size();
-                trie.emplace_back(current_node, type, left, right);
-                current_node = trie.size() - 1;
-                depth += trie[current_node].right - trie[current_node].left;
-            }
-            else {
+            if (depth != lcp) {
                 bool type = trie[last_node].type;
                 size_t left = trie[last_node].left;
                 size_t right = trie[last_node].right;
                 size_t middle = left - depth + lcp;
+
                 trie.emplace_back(current_node, type, left, middle);
+                current_node = trie.size() - 1;
+                depth += trie[current_node].right - trie[current_node].left;
+
                 trie[last_node] = Node(trie.size() - 1, type, middle, right);
-                current_node = trie.size() - 1;
-                depth += trie[current_node].right - trie[current_node].left;
-
-                size_t val = suf[i] + lcp;
-                type = suf[i] >= first.size();
-                left = val - first.size() * type;
-                right = type ? second.size() : first.size();
-                trie.emplace_back(trie.size() - 1, type, left, right);
-                current_node = trie.size() - 1;
-                depth += trie[current_node].right - trie[current_node].left;
-
             }
+            size_t val = suf[i] + lcp;
+            bool type = suf[i] >= first.size();
+            size_t left = val - first.size() * type;
+            size_t right = type ? second.size() : first.size();
+
+            trie.emplace_back(current_node, type, left, right);
+            current_node = trie.size() - 1;
+            depth += trie[current_node].right - trie[current_node].left;
         }
         children.resize(trie.size(), vector<size_t>());
         for (size_t i = 1; i < trie.size(); ++i) {
@@ -232,7 +230,7 @@ public:
 int main() {
     std::string first, second;
     std::cin >> first >> second;
-    TwoSuffixTrie trie(first, second);
+    TwoSuffixTree trie(first, second);
     std::cout << trie.getNodeCount() << '\n';
     trie.printLexOrder(0);
     return 0;
