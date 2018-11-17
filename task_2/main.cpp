@@ -157,75 +157,81 @@ private:
     vector<size_t> lex_index;
     size_t free_lex = 0;
 
-    void printLexOrderRec(size_t node_id) {
-        if (node_id != 0 && lex_index[node_id] == 0) {
-            lex_index[node_id] = free_lex++;
-        }
-        if (node_id != 0) {
-            Node node = trie[node_id];
-            std::cout << lex_index[node.parent] << ' ' << node.type << ' ' << node.left << ' ' << node.right << '\n';
-        }
-        for (auto child_id : children[node_id]) {
-            printLexOrderRec(child_id);
-        }
-    }
+    void printLexOrderRec(size_t node_id);
 
 public:
     TwoSuffixTree(const std::string& first, const std::string& second) {
         constructFromTwoStrings(first, second);
     }
 
-    void constructFromTwoStrings(const std::string& first, const std::string& second) {
-        std::string string = first + second;
-        suf = SuffixArrayWithLCP(string);
-        trie.emplace_back(0, 0, 0, 0);
-        size_t depth = 0;
-        size_t current_node = 0;
-        for (size_t i = 0; i < string.size(); ++i) {
-            size_t lcp = i > 0 ? suf.lcp(i - 1) : 0;
-            size_t last_node;
-            while (depth > lcp) {
-                depth -= trie[current_node].right - trie[current_node].left;
-                last_node = current_node;
-                current_node = trie[current_node].parent;
-            }
-            if (depth != lcp) {
-                bool type = trie[last_node].type;
-                size_t left = trie[last_node].left;
-                size_t right = trie[last_node].right;
-                size_t middle = left - depth + lcp;
+    void constructFromTwoStrings(const std::string& first, const std::string& second);
 
-                trie.emplace_back(current_node, type, left, middle);
-                current_node = trie.size() - 1;
-                depth += trie[current_node].right - trie[current_node].left;
+    void printLexOrder(size_t node_id);
 
-                trie[last_node] = Node(trie.size() - 1, type, middle, right);
-            }
-            size_t val = suf[i] + lcp;
-            bool type = suf[i] >= first.size();
-            size_t left = val - first.size() * type;
-            size_t right = type ? second.size() : first.size();
-
-            trie.emplace_back(current_node, type, left, right);
-            current_node = trie.size() - 1;
-            depth += trie[current_node].right - trie[current_node].left;
-        }
-        children.resize(trie.size(), vector<size_t>());
-        for (size_t i = 1; i < trie.size(); ++i) {
-            children[trie[i].parent].push_back(i);
-        }
-    }
-
-    void printLexOrder(size_t node_id) {
-        lex_index.resize(trie.size(), 0);
-        free_lex = 1;
-        printLexOrderRec(node_id);
-    }
-
-    size_t getNodeCount() const {
+    inline size_t getNodeCount() const {
         return trie.size();
     }
 };
+
+void TwoSuffixTree::constructFromTwoStrings(const std::string &first, const std::string &second) {
+    std::string string = first + second;
+    suf = SuffixArrayWithLCP(string);
+    trie.emplace_back(0, 0, 0, 0);
+    size_t depth = 0;
+    size_t current_node = 0;
+    for (size_t i = 0; i < string.size(); ++i) {
+        size_t lcp = i > 0 ? suf.lcp(i - 1) : 0;
+        size_t last_node;
+        while (depth > lcp) {
+            depth -= trie[current_node].right - trie[current_node].left;
+            last_node = current_node;
+            current_node = trie[current_node].parent;
+        }
+        if (depth != lcp) {
+            bool type = trie[last_node].type;
+            size_t left = trie[last_node].left;
+            size_t right = trie[last_node].right;
+            size_t middle = left - depth + lcp;
+
+            trie.emplace_back(current_node, type, left, middle);
+            current_node = trie.size() - 1;
+            depth += trie[current_node].right - trie[current_node].left;
+
+            trie[last_node] = Node(trie.size() - 1, type, middle, right);
+        }
+        size_t val = suf[i] + lcp;
+        bool type = suf[i] >= first.size();
+        size_t left = val - first.size() * type;
+        size_t right = type ? second.size() : first.size();
+
+        trie.emplace_back(current_node, type, left, right);
+        current_node = trie.size() - 1;
+        depth += trie[current_node].right - trie[current_node].left;
+    }
+    children.resize(trie.size(), vector<size_t>());
+    for (size_t i = 1; i < trie.size(); ++i) {
+        children[trie[i].parent].push_back(i);
+    }
+}
+
+void TwoSuffixTree::printLexOrderRec(size_t node_id) {
+    if (node_id != 0 && lex_index[node_id] == 0) {
+        lex_index[node_id] = free_lex++;
+    }
+    if (node_id != 0) {
+        Node node = trie[node_id];
+        std::cout << lex_index[node.parent] << ' ' << node.type << ' ' << node.left << ' ' << node.right << '\n';
+    }
+    for (auto child_id : children[node_id]) {
+        printLexOrderRec(child_id);
+    }
+}
+
+void TwoSuffixTree::printLexOrder(size_t node_id) {
+    lex_index.resize(trie.size(), 0);
+    free_lex = 1;
+    printLexOrderRec(node_id);
+}
 
 int main() {
     std::string first, second;
