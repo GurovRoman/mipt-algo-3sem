@@ -6,7 +6,7 @@ using std::vector;
 
 class SuffixArrayWithLCP {
 private:
-    const size_t alphabet_size = 255;  //maximum ascii value of a character in used strings
+    const size_t ALPHABET_SIZE = 255;  //maximum ascii value of a character in used strings
     std::string string;
     vector<size_t> suffixArray;
     vector<size_t> lcpArray;
@@ -73,7 +73,7 @@ void SuffixArrayWithLCP::constructSuffix() {
 
         for (int rank_type = 0; rank_type < 2; ++rank_type) {
             vector<RankedSuffix> buffer(size);
-            vector<size_t> counter(std::max<size_t>(size + 1, alphabet_size));
+            vector<size_t> counter(std::max<size_t>(size + 1, ALPHABET_SIZE));
             for (int i = 0; i < size; ++i) {
                 int value = rank_type ? suffixes[i].rank : suffixes[i].rank_next;
                 ++counter[value + 1];
