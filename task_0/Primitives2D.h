@@ -9,10 +9,10 @@ protected:
 
 public:
     explicit Point2D(componentType x = 0, componentType y = 0);
-    bool operator==(const Point2D& other);
-    const componentType& x();
+    bool operator==(const Point2D& other) const;
+    const componentType& x() const;
     const componentType& x(componentType x);
-    const componentType& y();
+    const componentType& y() const;
     const componentType& y(componentType y);
 };
 
@@ -25,8 +25,11 @@ public:
     Vector2D& operator-=(const Vector2D& other);
     Vector2D& operator*=(const componentType& scalar);
     Vector2D& operator/=(const componentType& scalar);
-    componentType dot(const Vector2D &other);
-    componentType cross_z(const Vector2D &other);
+    Vector2D operator+(const Vector2D& other) const;
+    Vector2D operator-(const Vector2D& other) const;
+    Vector2D operator-() const;
+    componentType dot(const Vector2D &other) const;
+    componentType cross_z(const Vector2D &other) const;
 };
 
 Vector2D operator*(Vector2D vec, const Point2D::componentType& scalar);
